@@ -1,5 +1,5 @@
 # rover
-Rover. Finding the shortest pass by Dijkstra’s shortest path algorithm
+Rover. Finding the shortest path by Dijkstra’s shortest path algorithm
 
 Задача
 Вы — инженер, проектирующий роверы-беспилотники. Вам надо спроектировать путь ровера по заранее известной местности с максимальной экономией заряда.

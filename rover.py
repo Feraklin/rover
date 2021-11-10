@@ -1,5 +1,10 @@
 import json
 import time
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 
 start_time = time.time()
 
@@ -7,18 +12,17 @@ start_time = time.time()
 def rover(map):
     map_widht = len(map[0])
     all_points = len(map) * map_widht
-    bestWay = []  # Кратчайший путь
-    shortWay = [100000] * all_points  # Матрица для хранения коротких путей
-    shortWay[0] = 0
-    calcWay = [100000] * all_points  # Матрица для расчетов коротких путей
-    calcWay[0] = 0
-    parents = [-1] * all_points  # Матрица для хранения точек пути
-    # Матрица для расчета расстояния между соседними точками
+    final_best_way = []
+    shortest_ways_start_to_x = [100000] * all_points
+    shortest_ways_start_to_x[0] = 0
+    temp_calculated_ways = [100000] * all_points
+    temp_calculated_ways[0] = 0
+    parents_points = [-1] * all_points
     distances = [0] * all_points
     for i in range(all_points):
         distances[i] = [0] * all_points
 
-    # Заполняем матрицу расстояний между соседними точками
+    # Fill distances matrix between neighboring points
     for i in range(all_points):
         for j in range(i + 1, all_points):
             if (
@@ -32,36 +36,33 @@ def rover(map):
                     abs(
                         map[i // map_widht][i % map_widht]
                         - map[j // map_widht][j % map_widht]
-                    )
-                    + 1
+                    ) + 1
                 )
 
-    # Алгоритм Дейкстры:
-    # Считаем, пока минимальное значение в матрице для расчета меньше текущего лучшего на финише
-    while min(calcWay) < shortWay[all_points - 1]:
-        i = calcWay.index(min(calcWay))
-        # Сразу меняем значение на очень большое, нам нужен был только индекс
-        calcWay[i] = 2000000
+    # Dijkstra's algorithm:
+    while min(temp_calculated_ways) < shortest_ways_start_to_x[all_points - 1]:
+        i = temp_calculated_ways.index(min(temp_calculated_ways))
+        temp_calculated_ways[i] = 2000000
         for j in range(all_points):
-            # Если сосед и если результат "шага" не превысит текущее лучшее значение
-            if distances[i][j] > 0 and shortWay[j] > shortWay[i] + distances[i][j]:
-                # Записываем результаты шага и точку, из которой пришли
-                shortWay[j] = calcWay[j] = shortWay[i] + distances[i][j]
-                parents[j] = i
+            if distances[i][j] > 0 and shortest_ways_start_to_x[j] > shortest_ways_start_to_x[i] + distances[i][j]:
+                shortest_ways_start_to_x[j] = temp_calculated_ways[j] = shortest_ways_start_to_x[i] + \
+                    distances[i][j]
+                parents_points[j] = i
 
-    # Воспроизводим путь от финальной точки в первоначальную и "разворачиваем" его
+    # Get final path from parents point matrix
     i = all_points - 1
-    bestWay.append([i // map_widht, i % map_widht])
+    final_best_way.append([i // map_widht, i % map_widht])
     while i > 0:
-        bestWay.append([parents[i] // map_widht, parents[i] % map_widht])
-        i = parents[i]
+        final_best_way.append([parents_points[i] // map_widht,
+                               parents_points[i] % map_widht])
+        i = parents_points[i]
 
-    bestWay = bestWay[::-1]
-    return (len(bestWay) - 1, shortWay[all_points - 1], bestWay)
+    final_best_way = final_best_way[::-1]
+    return (len(final_best_way) - 1, shortest_ways_start_to_x[all_points - 1], final_best_way)
 
 
-with open(r"D:\Программирование\1\PodgyzBot\rover\map.json", "r", encoding="utf-8") as f:
-    map = json.load(f)["map1"]
+with open(config["DEFAULT"]["MapPath"], "r", encoding="utf-8") as f:
+    map = json.load(f)["map2"]
 
 results = rover(map)
 

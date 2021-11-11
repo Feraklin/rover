@@ -1,102 +1,107 @@
 import json
 import time
+import configparser
 
+config = configparser.ConfigParser()
+config.read("config.ini")
 start_time = time.time()
 
 
 def rover(map):
-    mapWidht = len(map[0])  # количество столбцов "карты"
-    S = len(map) * mapWidht  # Количество элементов "карты"
-    bestWay = []  # Кратчайший путь
-    shortWay = [100000] * S  # Матрица для хранения коротких путей
-    shortWay[0] = 0
-    calcWay = [100000] * S  # Матрица для расчетов коротких путей
-    calcWay[0] = 0
-    parents = [-1] * S  # Матрица для хранения точек пути
-    # Матрица для расчета расстояния между соседними точками
-    distances = [0] * S
-    for i in range(S):
-        distances[i] = [0] * S
+    map_widht = len(map[0])
+    all_points = len(map) * map_widht
+    final_best_way = []
+    shortest_ways_start_to_x = [100000] * all_points
+    shortest_ways_start_to_x[0] = 0
+    temp_calculated_ways = [100000] * all_points
+    temp_calculated_ways[0] = 0
+    parents_points = [-1] * all_points
+    distances = [0] * all_points
+    for i in range(all_points):
+        distances[i] = [0] * all_points
 
-    # Заполняем матрицу расстояний между соседними точками
-    for i in range(S):
-        for j in range(i + 1, S):
-            # проверка на точки на полезную информацию
-            if isinstance(map[j // mapWidht][j % mapWidht], int) and isinstance(map[i // mapWidht][i % mapWidht], int
-                                                                                ):
+    # Fill distances matrix between neighboring points
+    for i in range(all_points):
+        for j in range(i + 1, all_points):
+            # Сheck point data
+            if isinstance(map[j // map_widht][j % map_widht], int) and isinstance(
+                map[i // map_widht][i % map_widht], int
+            ):
                 if (
-                    i // mapWidht == j // mapWidht
-                    and abs(i % mapWidht - j % mapWidht) == 1
+                    i // map_widht == j // map_widht
+                    and abs(i % map_widht - j % map_widht) == 1
                 ) or (
-                    abs(i // mapWidht - j // mapWidht) == 1
-                    and i % mapWidht == j % mapWidht
+                    abs(i // map_widht - j // map_widht) == 1
+                    and i % map_widht == j % map_widht
                 ):
                     distances[i][j] = distances[j][i] = (
                         abs(
-                            map[i // mapWidht][i % mapWidht]
-                            - map[j // mapWidht][j % mapWidht]
+                            map[i // map_widht][i % map_widht]
+                            - map[j // map_widht][j % map_widht]
                         )
                         + 1
                     )
                 elif (
-                    abs(i // mapWidht - j // mapWidht) == 1
-                    and abs(i % mapWidht - j % mapWidht) == 1
+                    abs(i // map_widht - j // map_widht) == 1
+                    and abs(i % map_widht - j % map_widht) == 1
                 ):
                     distances[i][j] = distances[j][i] = (
                         abs(
-                            map[i // mapWidht][i % mapWidht]
-                            - map[j // mapWidht][j % mapWidht]
+                            map[i // map_widht][i % map_widht]
+                            - map[j // map_widht][j % map_widht]
                         )
                         + 1.5
                     )
 
-    # Алгоритм Дейкстры:
-    # Считаем, пока минимальное значение в матрице для расчета меньше текущего лучшего
-    while min(calcWay) < shortWay[S - 1]:
-        i = calcWay.index(min(calcWay))
-        # Сразу меняем значение на очень большое, нам нужен был только индекс
-        calcWay[i] = 2000000
-        for j in range(S):
-            # добавлено исключение на случай недопустимых значений
+    # Dijkstra's algorithm:
+    while min(temp_calculated_ways) < shortest_ways_start_to_x[all_points - 1]:
+        i = temp_calculated_ways.index(min(temp_calculated_ways))
+        temp_calculated_ways[i] = 2000000
+        for j in range(all_points):
             try:
-                # Если сосед и если результат "шага" не превысит текущее лучшее значение
-                if distances[i][j] > 0 and shortWay[j] > shortWay[i] + distances[i][j]:
-                    # Записываем результаты шага и точку, из которой пришли
-                    shortWay[j] = calcWay[j] = shortWay[i] + distances[i][j]
-                    parents[j] = i
-            except:
+                if (
+                    distances[i][j] > 0
+                    and shortest_ways_start_to_x[j]
+                    > shortest_ways_start_to_x[i] + distances[i][j]
+                ):
+                    shortest_ways_start_to_x[j] = temp_calculated_ways[j] = (
+                        shortest_ways_start_to_x[i] + distances[i][j]
+                    )
+                    parents_points[j] = i
+            except TypeError:
                 None
-    # Воспроизводим путь от финальной точки в первоначальную и "разворачиваем"
-    # его
-    i = S - 1
-    bestWay.append([i // mapWidht, i % mapWidht])
+    # Get final path from parents point matrix
+    i = all_points - 1
+    final_best_way.append([i // map_widht, i % map_widht])
     while i > 0:
-        bestWay.append([parents[i] // mapWidht, parents[i] % mapWidht])
-        i = parents[i]
+        final_best_way.append(
+            [parents_points[i] // map_widht, parents_points[i] % map_widht]
+        )
+        i = parents_points[i]
 
-    bestWay = bestWay[::-1]
-    return (bestWay, shortWay[S - 1])
+    final_best_way = final_best_way[::-1]
+    return (final_best_way, shortest_ways_start_to_x[all_points - 1])
 
 
-# Проверка, что есть файл, а в нем что-то лежит
+# Check file data
 try:
-    with open(r"d:\Programming\1\PodgyzBot\rover\map.json", "r", encoding="utf-8") as f:
+    with open(config["DEFAULT"]["MapPath"], "r", encoding="utf-8") as f:
         map = json.load(f)["map1"]
-    # Проверка стартовой точки
+    # Start point check
     if map[0][0] == "X":
         print("Error: bad start point")
-    # Проверка финишной точки
+    # End point check
     elif map[-1][-1] == "X":
         print("Error: bad finish point")
     else:
-        # Проверка значений на карте переводом в инт
+        # Map data check
         try:
             for i in range(len(map[0])):
                 for j in range(len(map)):
                     if map[i][j] != "X":
                         try:
                             map[i][j] = int(map[i][j])
-                        except:
+                        except ValueError:
                             print(
                                 "Warning: Wrong map data in point ["
                                 + str(i)
@@ -106,8 +111,8 @@ try:
                             )
             try:
                 results = rover(map)
-                # Проверка: если начальная и конечная точка пути не
-                # соответствуют заданным, то по пути оказался тупик
+                # Check: if the finish point is not reached, then there is
+                # an impassable section on the way
 
                 if results[0][0] == [0, 0] and results[0][-1] == [
                     len(map[0]) - 1,
